@@ -1,0 +1,133 @@
+---
+title: "STAT_102B_HW1_ZELOS_ZHU"
+author: "Zelos Zhu"
+date: "January 21, 2016"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+
+population <- read_csv("indicator gapminder population.csv",col_names=TRUE,na="")
+life_expectancy <- read_csv("indicator life_expectancy_at_birth.csv",col_names=TRUE,na="")
+fertility <- read_csv("indicator undata total_fertility.csv", col_names=TRUE,na="")
+
+#slice out the countries we desire
+population <- slice(population, c(145,241))
+population <- population[,1:82]
+life_expectancy <- slice(life_expectancy, c(145,241))
+fertility <- slice(fertility, c(145,241))
+
+#r_population was being difficult
+r_population <- gather(population,"year","n", 1:82, na.rm=TRUE,convert=TRUE)
+r_population<-slice(r_population, 3:164)
+r_population<-mutate(r_population,country<-rep(c("Mexico","United States"),81))
+r_population$year<-as.numeric(r_population$year)
+r_population$population<-as.numeric(r_population$population)
+
+
+r_life_expectancy<-gather(life_expectancy,"year","n", 2:217,na.rm=TRUE,convert=TRUE)
+r_fertility<-gather(fertility,"year","n",2:217,na.rm=TRUE,convert=TRUE)
+
+#rename data frame columns
+names(r_population)<-c("year","population","country")
+names(r_life_expectancy)<-c("country","year","life_expectancy")
+names(r_fertility)<-c("country","year","fertility")
+
+
+library(ggplot2)
+combined<-inner_join(r_life_expectancy,r_fertility)
+combined<-right_join(combined,r_population)
+
+
+start<-filter(combined, year==1968)
+ggplot(start,aes(x=life_expectancy, y=fertility,size=population,label=country))+
+  geom_point(shape=20, aes(colour=country))+
+  scale_x_log10() + scale_size_area(max_size=15)+
+  xlim(55,85)+ylim(0,7)+
+  ggtitle(start$year)+
+  geom_text(size=5,vjust=1.75)
+
+library(animation)
+saveGIF({
+  for(i in 1968:2015)
+  {
+    d<-filter(combined,year==i)
+    g<-ggplot(d,aes(x=life_expectancy, y=fertility,size=population,label=country))+
+              geom_point(shape=20, aes(colour=country))+
+              scale_x_log10() + scale_size_area(max_size=15)+
+              xlim(55,85)+ylim(0,7)+
+              ggtitle(d$year)+
+              geom_text(size=5,vjust=1.75)
+    print(g)
+  }
+},movie.name = "HW1_Part1.gif", ani.width=600, ani.height=600
+)
+
+```
+
+PART 2
+```{r}
+GDP <- read_csv("GDPpercapitaconstant2000US.csv",col_names=TRUE,na="")
+TBdeaths <- read_csv("indicator_all tb deaths per 100000.csv", col_names=TRUE,na="")
+
+r_GDP<-gather(GDP,"year","n", 2:53,na.rm=TRUE,convert=TRUE)
+r_TBdeaths<-gather(TBdeaths,"year","n",2:20,na.rm=TRUE,convert=TRUE)
+
+population2<-slice(population,a)
+population2 <- population2[,1:82]
+r_population2 <- gather(population2,"year","n", 1:82, na.rm=TRUE,convert=TRUE)
+r_population2<-filter(r_population2,year>=1990 & year<=2007)
+r_population2$year<-as.numeric(r_population2$year)
+r_population2$n<-as.numeric(r_population2$n)
+r_population2$country<-r_GDP2$country
+
+names(r_population2)<-c("year","population")
+names(r_GDP)<-c("country","year","GDP")
+names(r_TBdeaths)<-c("country","year","TBdeaths")
+
+#North America Only
+r_GDP2<-filter(r_GDP,country=="United States" |country=="Canada" |country=="Mexico"|country=="Antigua and Barbuda" |country=="Bahamas" | country=="Barbados"|country=="Belize"| country=="Costa Rica" | country=="Cuba" | country=="Domincan Republic" | country=="El Salvador" | country=="Grenada"|country=="Guatemala"|country=="Haiti"|country=="Honduras"|country=="Jamaica"|country=="Nicaragua"|country=="Panama"|country=="Trinidad and Tobago")
+r_GDP2<-filter(r_GDP2,year>=1990 & year<=2007)
+r_GDP2<-filter(r_GDP2,country!="Jamaica")
+r_GDP2<-filter(r_GDP2,country!="Haiti")
+
+
+r_TBdeaths2<-filter(r_TBdeaths,country=="United States"|country=="United States of America" |country=="Canada" |country=="Mexico"|country=="Antigua and Barbuda" |country=="Bahamas" | country=="Barbados"|country=="Belize"| country=="Costa Rica" | country=="Cuba" | country=="Domincan Republic" | country=="El Salvador" | country=="Grenada"|country=="Guatemala"|country=="Haiti"|country=="Honduras"|country=="Jamaica"|country=="Nicaragua"|country=="Panama"|country=="Trinidad and Tobago")
+r_TBdeaths2<-filter(r_TBdeaths2,country!="Haiti")
+r_TBdeaths2<-filter(r_TBdeaths2,country!="Jamaica")
+r_TBdeaths2[seq(16,288,16),1]<-"United States"
+r_TBdeaths2$TBdeaths<-as.numeric(r_TBdeaths2$TBdeaths)
+
+
+combined2<-inner_join(r_GDP2,r_TBdeaths2)
+combined2<-right_join(combined2,r_population2)
+
+
+start2<-filter(combined2, year==1990)
+ggplot(start2,aes(x=GDP, y=TBdeaths,size=population,label=country))+
+  geom_point(shape=20, aes(colour=country))+
+  scale_x_log10() + scale_size_area(max_size=25)+
+  xlim(500,40000)+ylim(0,20)+
+  ggtitle(start2$year)
+  geom_text(size=2,hjust=-1)
+
+library(animation)
+saveGIF({
+  for(i in 1968:2015)
+  {
+    d<-filter(combined,year==i)
+    g<-ggplot(d,aes(x=life_expectancy, y=fertility,size=population,label=country))+
+              geom_point(shape=20, aes(colour=country))+
+              scale_x_log10() + scale_size_area(max_size=15)+
+              xlim(55,85)+ylim(0,7)+
+              ggtitle(d$year)+
+              geom_text(size=5,vjust=1.75)
+    print(g)
+  }
+},movie.name = "HW1_Part2.gif", ani.width=600, ani.height=600
+)
+```
